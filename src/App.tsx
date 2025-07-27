@@ -53,9 +53,9 @@ const mockOpen = async () => {
   return null;
 };
 
-const mockConvertFileSrc = (filePath: string) => {
+const mockConvertFileSrc = (_filePath: string) => {
   // Return a placeholder for browser preview
-  return '/placeholder.svg?height=100&width=100&text=Audio+File';
+  return '/placeholder.svg?height=100&width=100&text=Demo+Audio';
 };
 
 // Dynamic imports with fallbacks
@@ -816,7 +816,7 @@ function App() {
 
       {/* Диалог "О программе" */}
       <Dialog open={showAbout} onOpenChange={setShowAbout}>
-        <DialogContent className="bg-gradient-to-br from-purple-900/95 via-blue-900/95 to-indigo-900/95 backdrop-blur-sm border-white/10 text-white">
+        <DialogContent className="bg-gradient-to-br from-purple-900/95 via-blue-900/95 to-indigo-900/95 backdrop-blur-sm border-white/10 text-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-white text-center">{t.aboutTitle}</DialogTitle>
             <DialogDescription className="text-white/70 text-center">
@@ -824,7 +824,7 @@ function App() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 text-center">
-            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-2xl font-bold text-white">
+            <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg">
               ♪
             </div>
             <div className="space-y-2 text-sm text-white/70">
@@ -835,7 +835,7 @@ function App() {
           <div className="flex justify-center">
             <Button
               variant="ghost"
-              className="text-white hover:bg-white/10 bg-white/5"
+              className="text-white hover:bg-white/10 bg-white/5 border border-white/10"
               onClick={() => setShowAbout(false)}
             >
               {t.close}
