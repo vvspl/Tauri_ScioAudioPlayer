@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { open } from '@tauri-apps/api/dialog';
-import { convertFileSrc } from '@tauri-apps/api/tauri';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,6 +34,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import { translations, type Language } from '@/lib/translations';
 
 interface AudioTrack {
   id: number;
@@ -45,100 +44,33 @@ interface AudioTrack {
   filePath: string;
 }
 
-type Language = 'ru' | 'en' | 'uk';
+// Check if we're running in Tauri environment
+const isTauri = typeof window !== 'undefined' && window.__TAURI__ !== undefined;
 
-// Переводы
-const translations = {
-  ru: {
-    playlist: 'Плейлист',
-    audioPlayer: 'Аудиоплеер',
-    noAudioFiles: 'Нет аудиофайлов',
-    clickUploadIcon: 'Нажмите на иконку загрузки',
-    selectTrack: 'Выберите трек',
-    mouseControls: 'Управление мышью:',
-    leftClick: 'ЛКМ - повтор текущего трека',
-    rightClick: 'ПКМ - следующий трек',
-    middleClick: 'СКМ - предыдущий трек',
-    mouseWheel: 'Колесико мыши - изменение громкости',
-    uploadFiles: 'Загрузите свои аудиофайлы через кнопку загрузки в плейлисте',
-    autoPlay: 'Автопроигрывание',
-    language: 'Язык',
-    settings: 'Настройки',
-    couldNotLoadAudio: 'Не удалось загрузить аудиофайл',
-    playbackError: 'Ошибка воспроизведения',
-    loadError: 'Ошибка загрузки файла',
-    fileSelectionError: 'Ошибка при загрузке файлов',
-    clearPlaylist: 'Очистить плейлист',
-    removeTrack: 'Удалить трек',
-    uploadTooltip: 'Загрузить файлы',
-    about: 'О программе',
-    aboutTitle: 'Аудиоплеер',
-    aboutDescription:
-      'Современный аудиоплеер, созданный с использованием Tauri и React. Поддерживает различные аудиоформаты и имеет удобный интерфейс для управления плейлистами.',
-    version: 'Версия: 1.0.0',
-    author: 'Разработчик: v0',
-    close: 'Закрыть',
-  },
-  en: {
-    playlist: 'Playlist',
-    audioPlayer: 'Audio Player',
-    noAudioFiles: 'No audio files',
-    clickUploadIcon: 'Click the upload icon',
-    selectTrack: 'Select track',
-    mouseControls: 'Mouse controls:',
-    leftClick: 'LMB - repeat current track',
-    rightClick: 'RMB - next track',
-    middleClick: 'MMB - previous track',
-    mouseWheel: 'Mouse wheel - volume control',
-    uploadFiles: 'Upload your audio files using the upload button in the playlist',
-    autoPlay: 'Auto-play',
-    language: 'Language',
-    settings: 'Settings',
-    couldNotLoadAudio: 'Could not load audio file',
-    playbackError: 'Playback error',
-    loadError: 'File loading error',
-    fileSelectionError: 'Error loading files',
-    clearPlaylist: 'Clear playlist',
-    removeTrack: 'Remove track',
-    uploadTooltip: 'Upload files',
-    about: 'About',
-    aboutTitle: 'Audio Player',
-    aboutDescription:
-      'Modern audio player built with Tauri and React. Supports various audio formats and features a convenient interface for playlist management.',
-    version: 'Version: 1.0.0',
-    author: 'Developer: v0',
-    close: 'Close',
-  },
-  uk: {
-    playlist: 'Плейлист',
-    audioPlayer: 'Аудіоплеєр',
-    noAudioFiles: 'Немає аудіофайлів',
-    clickUploadIcon: 'Натисніть на іконку завантаження',
-    selectTrack: 'Оберіть трек',
-    mouseControls: 'Керування мишею:',
-    leftClick: 'ЛКМ - повтор поточного треку',
-    rightClick: 'ПКМ - наступний трек',
-    middleClick: 'СКМ - попередній трек',
-    mouseWheel: 'Колесо миші - зміна гучності',
-    uploadFiles: 'Завантажте свої аудіофайли через кнопку завантаження у плейлисті',
-    autoPlay: 'Автопрогравання',
-    language: 'Мова',
-    settings: 'Налаштування',
-    couldNotLoadAudio: 'Не вдалося завантажити аудіофайл',
-    playbackError: 'Помилка відтворення',
-    loadError: 'Помилка завантаження файлу',
-    fileSelectionError: 'Помилка при завантаженні файлів',
-    clearPlaylist: 'Очистити плейлист',
-    removeTrack: 'Видалити трек',
-    uploadTooltip: 'Завантажити файли',
-    about: 'Про програму',
-    aboutTitle: 'Аудіоплеєр',
-    aboutDescription:
-      'Сучасний аудіоплеєр, створений з використанням Tauri та React. Підтримує різні аудіоформати та має зручний інтерфейс для керування плейлистами.',
-    version: 'Версія: 1.0.0',
-    author: 'Розробник: v0',
-    close: 'Закрити',
-  },
+// Mock functions for browser environment
+const mockOpen = async () => {
+  alert('File selection is only available in the desktop app. This is a preview version.');
+  return null;
+};
+
+const mockConvertFileSrc = (filePath: string) => {
+  // Return a placeholder for browser preview
+  return '/placeholder.svg?height=100&width=100&text=Audio+File';
+};
+
+// Dynamic imports with fallbacks
+const getTauriApis = async () => {
+  if (isTauri) {
+    try {
+      const { open } = await import('@tauri-apps/api/dialog');
+      const { convertFileSrc } = await import('@tauri-apps/api/tauri');
+      return { open, convertFileSrc };
+    } catch (error) {
+      console.warn('Failed to load Tauri APIs:', error);
+      return { open: mockOpen, convertFileSrc: mockConvertFileSrc };
+    }
+  }
+  return { open: mockOpen, convertFileSrc: mockConvertFileSrc };
 };
 
 // Компонент для бегущей строки
@@ -210,7 +142,25 @@ function MarqueeText({
 }
 
 function App() {
-  const [tracks, setTracks] = useState<AudioTrack[]>([]);
+  const [tracks, setTracks] = useState<AudioTrack[]>([
+    // Demo tracks for browser preview
+    ...(isTauri
+      ? []
+      : [
+          {
+            id: 1,
+            name: 'Demo Track 1 - Very Long Song Name That Should Trigger Marquee Effect.mp3',
+            url: '/placeholder.svg?height=100&width=100&text=Demo+Audio',
+            filePath: '/demo/track1.mp3',
+          },
+          {
+            id: 2,
+            name: 'Demo Track 2.mp3',
+            url: '/placeholder.svg?height=100&width=100&text=Demo+Audio',
+            filePath: '/demo/track2.mp3',
+          },
+        ]),
+  ]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -233,6 +183,13 @@ function App() {
 
   const currentTrack = tracks[currentTrackIndex];
   const t = translations[language];
+
+  // Show environment info for preview
+  useEffect(() => {
+    if (!isTauri) {
+      console.log('Running in browser preview mode. File operations are mocked.');
+    }
+  }, []);
 
   // Обработка прокрутки колесика мыши для громкости
   useEffect(() => {
@@ -325,7 +282,17 @@ function App() {
       setIsPlaying(false);
       // Используем ref для получения актуального языка без зависимости
       const currentTranslations = translations[languageRef.current];
-      setAudioError(`${currentTranslations.couldNotLoadAudio}: ${currentTrack?.name || 'Unknown'}`);
+      if (!isTauri) {
+        setAudioError(
+          `${currentTranslations.couldNotLoadAudio}: ${
+            currentTrack?.name || 'Unknown'
+          } (Preview mode - audio files not available)`,
+        );
+      } else {
+        setAudioError(
+          `${currentTranslations.couldNotLoadAudio}: ${currentTrack?.name || 'Unknown'}`,
+        );
+      }
     };
 
     const handleEnded = () => {
@@ -369,6 +336,9 @@ function App() {
         setIsLoading(true);
         setAudioError(null);
 
+        // Get Tauri APIs with fallbacks
+        const { convertFileSrc } = await getTauriApis();
+
         // Конвертируем путь файла в URL, который может использовать браузер
         const assetUrl = convertFileSrc(currentTrack.filePath);
         console.log('Loading track:', currentTrack.name, 'URL:', assetUrl);
@@ -385,7 +355,13 @@ function App() {
               setIsPlaying(false);
               // Используем ref для получения актуального языка без зависимости
               const currentTranslations = translations[languageRef.current];
-              setAudioError(`${currentTranslations.playbackError}: ${currentTrack.name}`);
+              if (!isTauri) {
+                setAudioError(
+                  `${currentTranslations.playbackError}: ${currentTrack.name} (Preview mode - audio playback not available)`,
+                );
+              } else {
+                setAudioError(`${currentTranslations.playbackError}: ${currentTrack.name}`);
+              }
             }
           }
         }
@@ -393,7 +369,13 @@ function App() {
         console.error('Error loading track:', error);
         // Используем ref для получения актуального языка без зависимости
         const currentTranslations = translations[languageRef.current];
-        setAudioError(`${currentTranslations.loadError}: ${currentTrack.name}`);
+        if (!isTauri) {
+          setAudioError(
+            `${currentTranslations.loadError}: ${currentTrack.name} (Preview mode - file loading not available)`,
+          );
+        } else {
+          setAudioError(`${currentTranslations.loadError}: ${currentTrack.name}`);
+        }
         setIsLoading(false);
       }
     };
@@ -495,6 +477,9 @@ function App() {
 
   const handleFileUpload = async () => {
     try {
+      // Get Tauri APIs with fallbacks
+      const { open } = await getTauriApis();
+
       const selected = await open({
         multiple: true,
         filters: [
@@ -506,6 +491,8 @@ function App() {
       });
 
       if (selected && Array.isArray(selected)) {
+        const { convertFileSrc } = await getTauriApis();
+
         const newTracks: AudioTrack[] = selected.map((filePath, index) => {
           const fileName = filePath.split(/[\\/]/).pop() || 'Unknown';
           return {
@@ -525,7 +512,11 @@ function App() {
       }
     } catch (error) {
       console.error('Ошибка при выборе файлов:', error);
-      setAudioError(t.fileSelectionError);
+      if (!isTauri) {
+        setAudioError(`${t.fileSelectionError} (Preview mode - file selection not available)`);
+      } else {
+        setAudioError(t.fileSelectionError);
+      }
     }
   };
 
@@ -538,6 +529,19 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4">
+      {/* Preview mode indicator */}
+      {!isTauri && (
+        <div className="max-w-6xl mx-auto mb-4">
+          <Alert className="bg-blue-500/20 border-blue-500/50">
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-white">
+              Preview Mode: This is a browser preview. File operations and audio playback are
+              limited. Download the desktop app for full functionality.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Плейлист */}
         <Card className="lg:col-span-1 bg-black/20 backdrop-blur-sm border-white/10">
