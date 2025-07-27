@@ -1,0 +1,63 @@
+{
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist",
+    "withGlobalTauri": false
+  },
+  "package": {
+    "productName": "Audio Player",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "dialog": {
+        "all": false,
+        "open": true,
+        "save": false
+      },
+      "fs": {
+        "all": false,
+        "readFile": true,
+        "scope": ["**"]
+      },
+      "path": {
+        "all": true
+      },
+      "os": {
+        "all": true
+      },
+      "protocol": {
+        "all": true,
+        "asset": true,
+        "assetScope": ["**"]
+      }
+    },
+    "bundle": {
+      "active": false,
+      "targets": "all",
+      "identifier": "com.audioplayer.app"
+    },
+    "security": {
+      "csp": "default-src 'self'; media-src 'self' asset: https://asset.localhost"
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "resizable": false,
+        "title": "Scio Player",
+        "width": 1200,
+        "height": 700,
+        "minWidth": 600,
+        "minHeight": 400,
+        "center": true
+      }
+    ]
+  }
+}
